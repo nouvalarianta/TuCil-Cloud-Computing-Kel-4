@@ -5,7 +5,7 @@
 | --- | ----------------- | --------- | --------- |
 | 1   | Panji Bachtiar    | 434231029 |           |
 | 2   | Helmi Said H      | 434231080 |           |
-| 3   | Nouval Aryanta    |           |           |
+| 3   | Nouval Aryanta    | 434231071 |           |
 | 4   | Abdillah Muharrul |           |           |
 
 
