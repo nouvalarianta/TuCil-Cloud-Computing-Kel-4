@@ -6,6 +6,12 @@ import type {
   CheckInResponse,
   StatusQuery,
   StatusResponse,
+  GpsPostRequest,
+  GpsPostResponse,
+  GpsMarkerQuery,
+  GpsMarkerResponse,
+  GpsPolylineQuery,
+  GpsPolylineResponse,
 } from "./types";
 
 // Proxy through Next.js API route to avoid CORS issues with GAS
@@ -60,4 +66,33 @@ export async function getPresenceStatus(
     )
   );
   return request<StatusResponse>(`/presence/status?${params.toString()}`);
+}
+
+// --- Modul 3: GPS + Peta ---
+
+export async function postGpsLocation(
+  data: GpsPostRequest
+): Promise<ApiResponse<GpsPostResponse>> {
+  return request<GpsPostResponse>("/sensor/gps", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getGpsMarker(
+  query: GpsMarkerQuery
+): Promise<ApiResponse<GpsMarkerResponse>> {
+  const params = new URLSearchParams({ device_id: query.device_id });
+  return request<GpsMarkerResponse>(`/sensor/gps/marker?${params.toString()}`);
+}
+
+export async function getGpsPolyline(
+  query: GpsPolylineQuery
+): Promise<ApiResponse<GpsPolylineResponse>> {
+  const params = new URLSearchParams({
+    device_id: query.device_id,
+    from: query.from,
+    to: query.to,
+  });
+  return request<GpsPolylineResponse>(`/sensor/gps/polyline?${params.toString()}`);
 }

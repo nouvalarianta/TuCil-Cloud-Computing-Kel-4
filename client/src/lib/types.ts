@@ -49,3 +49,41 @@ export interface StatusResponse {
   status: string;
   last_ts: string; // ISO-8601
 }
+
+// --- Modul 3: GPS + Peta ---
+
+export interface GpsPostRequest {
+  device_id: string;
+  lat: number;
+  lng: number;
+  accuracy: number;
+  altitude: number;
+  ts: string; // ISO-8601
+}
+
+export interface GpsPostResponse {
+  status: string;
+  ts: string;
+}
+
+export interface GpsMarkerQuery {
+  device_id: string;
+}
+
+export interface GpsMarkerResponse {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  altitude: number;
+  ts: string;
+}
+
+export interface GpsPolylineQuery {
+  device_id: string;
+  from: string; // ISO-8601
+  to: string; // ISO-8601
+}
+
+export interface GpsPolylineResponse {
+  points: Array<{ lat: number; lng: number; ts: string }>;
+}

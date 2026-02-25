@@ -21,9 +21,9 @@ const modules = [
     title: "GPS + Peta",
     description: "Tracking lokasi GPS real-time dengan marker dan polyline di peta interaktif.",
     icon: "🗺️",
-    href: "/telemetry/gps",
+    href: "/gps/map",
     gradient: "from-emerald-500 to-teal-500",
-    available: false,
+    available: true,
   },
 ];
 
@@ -34,7 +34,7 @@ export default function Home() {
       <div className="text-center mb-12 pt-8">
         <div className="text-6xl mb-4">☁️</div>
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-          CloudAttend
+          Kelompok 4
         </h1>
         <p className="text-white/50 text-lg">
           Praktik Komputasi Awan — Sistem Presensi & Telemetri Berbasis Cloud

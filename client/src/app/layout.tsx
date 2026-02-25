@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CloudAttend — Praktik Komputasi Awan",
+  title: "Kelompok 4 — Praktik Komputasi Awan",
   description: "Sistem presensi QR dinamis, accelerometer, dan GPS berbasis cloud",
 };
 
@@ -32,7 +32,7 @@ export default function RootLayout({
             <a href="/" className="flex items-center gap-2 group">
               <span className="text-2xl">☁️</span>
               <span className="font-bold text-lg bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-violet-300 transition-all">
-                CloudAttend
+                Kelompok 4
               </span>
             </a>
             <nav className="flex gap-1">
@@ -42,9 +42,9 @@ export default function RootLayout({
               <span className="px-3 py-1.5 text-sm text-white/20 cursor-not-allowed">
                 Accel
               </span>
-              <span className="px-3 py-1.5 text-sm text-white/20 cursor-not-allowed">
+              <a href="/gps/map" className="px-3 py-1.5 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all">
                 GPS
-              </span>
+              </a>
             </nav>
           </div>
         </header>
