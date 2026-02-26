@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { checkIn } from "@/lib/api-client";
+import { getDeviceId } from "@/lib/device-id";
 
 // Dynamic import to avoid SSR issues with camera access
 const QrScanner = dynamic(() => import("@/components/qr-scanner"), {
@@ -31,6 +33,17 @@ export default function ScanPage() {
     error?: string;
   } | null>(null);
 
+  useEffect(() => {
+    // Load User ID from localStorage
+    const savedUserId = localStorage.getItem("presence_user_id");
+    if (savedUserId) {
+      setUserId(savedUserId);
+    }
+    
+    // Auto-generate / load Device ID
+    setDeviceId(getDeviceId());
+  }, []);
+
   const handleScan = useCallback((decodedText: string) => {
     try {
       const data = JSON.parse(decodedText);
@@ -51,13 +64,13 @@ export default function ScanPage() {
 
   const handleCheckIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!scannedData) return;
+    if (!scannedData || !userId) return;
 
     setState("submitting");
 
     const res = await checkIn({
       user_id: userId,
-      device_id: deviceId || `dev-${Date.now()}`,
+      device_id: deviceId,
       course_id: scannedData.course_id,
       session_id: scannedData.session_id,
       qr_token: scannedData.qr_token,
@@ -82,6 +95,22 @@ export default function ScanPage() {
     setResult(null);
   };
 
+  if (!userId && state === "scanning") {
+    return (
+      <div className="max-w-lg mx-auto p-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 text-center">
+        <p className="text-3xl mb-3">⚠️</p>
+        <h2 className="text-lg font-semibold text-amber-400 mb-2">NIM Belum Diisi</h2>
+        <p className="text-sm text-amber-400/80 mb-6">Kamu harus login sebagai mahasiswa terlebih dahulu.</p>
+        <Link 
+          href="/presence/mahasiswa"
+          className="px-6 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/20"
+        >
+          Isi NIM Sekarang
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-lg mx-auto">
       {/* Scanning */}
@@ -94,7 +123,7 @@ export default function ScanPage() {
         </div>
       )}
 
-      {/* Confirming — fill identity */}
+      {/* Confirming — read-only identity */}
       {state === "confirming" && scannedData && (
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 animate-in fade-in duration-300">
           <div className="text-center mb-5">
@@ -109,31 +138,15 @@ export default function ScanPage() {
           </div>
 
           <form onSubmit={handleCheckIn} className="space-y-4">
-            <div>
-              <label className="block text-sm text-white/60 mb-1.5">
-                NIM / User ID
-              </label>
-              <input
-                type="text"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="contoh: 2023xxxx"
-                required
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-white/60 mb-1.5">
-                Device ID{" "}
-                <span className="text-white/30">(opsional, auto-generate)</span>
-              </label>
-              <input
-                type="text"
-                value={deviceId}
-                onChange={(e) => setDeviceId(e.target.value)}
-                placeholder="contoh: dev-001"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
-              />
+            <div className="grid grid-cols-2 gap-3 text-sm mb-2">
+              <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+                <p className="text-white/40 text-[11px] uppercase tracking-wider mb-1">NIM / User ID</p>
+                <p className="font-mono text-cyan-400 font-medium">{userId}</p>
+              </div>
+              <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+                <p className="text-white/40 text-[11px] uppercase tracking-wider mb-1">Device ID</p>
+                <p className="font-mono text-emerald-400 font-medium truncate">{deviceId}</p>
+              </div>
             </div>
 
             {scannedData.course_id && (

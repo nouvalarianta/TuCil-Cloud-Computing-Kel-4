@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { getPresenceStatus } from "@/lib/api-client";
 import type { StatusResponse } from "@/lib/types";
 
@@ -12,8 +13,18 @@ export default function StatusPage() {
   const [statusData, setStatusData] = useState<StatusResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    // Load User ID from localStorage
+    const savedUserId = localStorage.getItem("presence_user_id");
+    if (savedUserId) {
+      setUserId(savedUserId);
+    }
+  }, []);
+
   const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!userId) return;
+    
     setLoading(true);
     setError(null);
     setStatusData(null);
@@ -40,8 +51,33 @@ export default function StatusPage() {
         ? "red"
         : "amber";
 
+  if (!userId) {
+    return (
+      <div className="max-w-lg mx-auto p-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 text-center">
+        <p className="text-3xl mb-3">⚠️</p>
+        <h2 className="text-lg font-semibold text-amber-400 mb-2">NIM Belum Diisi</h2>
+        <p className="text-sm text-amber-400/80 mb-6">Kamu harus login sebagai mahasiswa terlebih dahulu.</p>
+        <Link 
+          href="/presence/mahasiswa"
+          className="px-6 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/20"
+        >
+          Isi NIM Sekarang
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-lg mx-auto">
+      {/* User Info Bar */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl border border-white/10 text-sm mb-6">
+        <span className="text-2xl">🎓</span>
+        <div>
+          <p className="text-white/40 text-[11px] uppercase tracking-wider mb-0.5">NIM / User ID</p>
+          <p className="text-cyan-400 font-mono font-medium">{userId}</p>
+        </div>
+      </div>
+
       {/* Form */}
       <form
         onSubmit={handleCheck}
@@ -50,19 +86,6 @@ export default function StatusPage() {
         <h2 className="font-semibold text-lg mb-4">📋 Cek Status Presensi</h2>
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-white/60 mb-1.5">
-              NIM / User ID
-            </label>
-            <input
-              type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder="contoh: 2023xxxx"
-              required
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
-            />
-          </div>
           <div>
             <label className="block text-sm text-white/60 mb-1.5">
               Course ID

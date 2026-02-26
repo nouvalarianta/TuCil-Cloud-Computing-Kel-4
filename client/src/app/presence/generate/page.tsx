@@ -4,6 +4,19 @@ import { useState } from "react";
 import QRCode from "qrcode";
 import { generateQrToken } from "@/lib/api-client";
 
+const courses = [
+  { id: "cloud-101", name: "Praktik Komputasi Awan" },
+  { id: "ai-201", name: "Kecerdasan Buatan" },
+  { id: "db-301", name: "Basis Data Lanjut" },
+];
+
+const sessions = [
+  { id: "sesi-01", name: "Sesi 1" },
+  { id: "sesi-02", name: "Sesi 2" },
+  { id: "sesi-03", name: "Sesi 3" },
+  { id: "sesi-04", name: "Sesi 4" },
+];
+
 export default function GenerateQrPage() {
   const [courseId, setCourseId] = useState("");
   const [sessionId, setSessionId] = useState("");
@@ -50,6 +63,8 @@ export default function GenerateQrPage() {
     setLoading(false);
   };
 
+  const selectedCourse = courses.find((c) => c.id === courseId);
+
   return (
     <div className="max-w-lg mx-auto">
       {/* Form */}
@@ -62,31 +77,54 @@ export default function GenerateQrPage() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-white/60 mb-1.5">
-              Course ID
+              Mata Kuliah
             </label>
-            <input
-              type="text"
+            <select
               value={courseId}
               onChange={(e) => setCourseId(e.target.value)}
-              placeholder="contoh: cloud-101"
               required
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
-            />
+              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+            >
+              <option value="" disabled className="bg-gray-900 text-white/40">
+                — Pilih Mata Kuliah —
+              </option>
+              {courses.map((c) => (
+                <option key={c.id} value={c.id} className="bg-gray-900 text-white">
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm text-white/60 mb-1.5">
-              Session ID
+              Sesi Pertemuan
             </label>
-            <input
-              type="text"
+            <select
               value={sessionId}
               onChange={(e) => setSessionId(e.target.value)}
-              placeholder="contoh: sesi-02"
               required
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
-            />
+              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+            >
+              <option value="" disabled className="bg-gray-900 text-white/40">
+                — Pilih Sesi —
+              </option>
+              {sessions.map((s) => (
+                <option key={s.id} value={s.id} className="bg-gray-900 text-white">
+                  {s.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
+
+        {selectedCourse && sessionId && (
+          <div className="mt-4 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl text-sm">
+            <span className="text-white/40">Akan generate untuk: </span>
+            <span className="text-blue-400 font-medium">{selectedCourse.name}</span>
+            <span className="text-white/30"> · </span>
+            <span className="text-cyan-400">{sessions.find(s => s.id === sessionId)?.name}</span>
+          </div>
+        )}
 
         <button
           type="submit"

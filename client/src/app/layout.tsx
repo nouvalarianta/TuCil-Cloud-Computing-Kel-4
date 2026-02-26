@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import BottomNav from "@/components/BottomNav";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,31 +28,11 @@ export default function RootLayout({
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl" />
         </div>
 
-        <header className="border-b border-white/5 backdrop-blur-md bg-gray-950/50 sticky top-0 z-50">
-          <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="/" className="flex items-center gap-2 group">
-              <span className="text-2xl">☁️</span>
-              <span className="font-bold text-lg bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-violet-300 transition-all">
-                Kelompok 4
-              </span>
-            </a>
-            <nav className="flex gap-1">
-              <a href="/presence/generate" className="px-3 py-1.5 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all">
-                Presensi
-              </a>
-              <span className="px-3 py-1.5 text-sm text-white/20 cursor-not-allowed">
-                Accel
-              </span>
-              <a href="/gps/map" className="px-3 py-1.5 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all">
-                GPS
-              </a>
-            </nav>
-          </div>
-        </header>
-
-        <main className="max-w-5xl mx-auto px-4 py-8">
+        <main className="max-w-5xl mx-auto px-4 py-6 pb-24">
           {children}
         </main>
+
+        <BottomNav />
       </body>
     </html>
   );
