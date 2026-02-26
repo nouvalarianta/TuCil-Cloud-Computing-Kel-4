@@ -6,16 +6,16 @@ const SPREADSHEET_ID = "15_0lTfXBo03YmQ_dbDQi42uFfsgxm08ANL3J79rYgtE"; // Leave 
 const TTL_SECONDS = 120; // Token valid for 120 seconds
 
 function getDb() {
-  return SPREADSHEET_ID ? 
-    SpreadsheetApp.openById(SPREADSHEET_ID) : 
+  return SPREADSHEET_ID ?
+    SpreadsheetApp.openById(SPREADSHEET_ID) :
     SpreadsheetApp.getActiveSpreadsheet();
 }
 
 function getSheet(sheetName) {
   const db = getDb();
-  if(!db) throw new Error("Spreadsheet not found");
+  if (!db) throw new Error("Spreadsheet not found");
   const sheet = db.getSheetByName(sheetName);
-  if(!sheet) throw new Error(`Sheet ${sheetName} not found`);
+  if (!sheet) throw new Error(`Sheet ${sheetName} not found`);
   return sheet;
 }
 
@@ -67,7 +67,7 @@ function doPost(e) {
   try {
     const path = (e.parameter && e.parameter.path) ? e.parameter.path : "";
     let payload = {};
-    
+
     if (e.postData && e.postData.contents) {
       payload = JSON.parse(e.postData.contents);
     }
@@ -96,18 +96,18 @@ function handleGenerateQR(payload) {
   const { course_id, session_id, ts } = payload;
   if (!course_id || !session_id) return sendError("Missing required parameters: course_id, session_id");
 
-  const token = "TKN-" + Utilities.getUuid().substring(0,6).toUpperCase();
+  const token = "TKN-" + Utilities.getUuid().substring(0, 6).toUpperCase();
   const now = new Date();
   const expires = new Date(now.getTime() + (TTL_SECONDS * 1000));
-  
+
   const sheet = getSheet('tokens');
   // qr_token, course_id, session_id, created_at, expires_at, used
   sheet.appendRow([
     token,
     course_id,
     session_id,
-    now.toISOString(),
-    expires.toISOString(),
+    now.getTime(),      // Use Unix Epoch MS format
+    expires.getTime(),  // Use Unix Epoch MS format
     false
   ]);
 
@@ -120,17 +120,17 @@ function processGenerateQR(payload) {
     const { course_id, session_id, ts } = payload;
     if (!course_id || !session_id) return { ok: false, error: "Missing required parameters" };
 
-    const token = "TKN-" + Utilities.getUuid().substring(0,6).toUpperCase();
+    const token = "TKN-" + Utilities.getUuid().substring(0, 6).toUpperCase();
     const now = new Date();
     const expires = new Date(now.getTime() + (TTL_SECONDS * 1000));
-    
+
     const sheet = getSheet('tokens');
     sheet.appendRow([
       token,
       course_id,
       session_id,
-      now.toISOString(),
-      expires.toISOString(),
+      now.getTime(),
+      expires.getTime(),
       false
     ]);
 
@@ -146,7 +146,7 @@ function handleCheckin(payload) {
 
   const tokensSheet = getSheet('tokens');
   const data = tokensSheet.getDataRange().getValues(); // [qr_token, course_id, session_id, created_at, expires_at, used]
-  
+
   let tokenRowIdx = -1;
   let tokenData = null;
 
@@ -160,16 +160,19 @@ function handleCheckin(payload) {
   }
 
   if (tokenRowIdx === -1) return sendError("token_invalid");
-  
-  if (tokenData[5] === true) return sendError("token_already_used");
-  
+
+  // Mematikan pengecekan token "used" karena 1 QR Code harus bisa discan se-kelas
+  // if (tokenData[5] === true) return sendError("token_already_used");
+
   const now = new Date();
-  const expiresAt = new Date(tokenData[4]);
+
+  // tokenData[4] is now an integer/number (Unix Epoch MS)
+  // Ensure we format it correctly as a number if Sheets returns it as string representation of number
+  const expiresAt = new Date(Number(tokenData[4]));
   if (now > expiresAt) return sendError("token_expired");
 
-  // Mark token as used
-  // tokenRowIdx + 1 (because getRange is 1-indexed), column 6 for 'used'
-  tokensSheet.getRange(tokenRowIdx + 1, 6).setValue(true);
+  // Mematikan update status "used" 
+  // tokensSheet.getRange(tokenRowIdx + 1, 6).setValue(true);
 
   // Save to presence sheet
   const presenceSheet = getSheet('presence');
@@ -192,12 +195,12 @@ function handleCheckin(payload) {
 function handleGetStatus(e) {
   const p = e.parameter;
   const { user_id, course_id, session_id } = p;
-  
+
   if (!user_id || !course_id || !session_id) return sendError("Missing parameters");
 
   const presSheet = getSheet('presence');
   const data = presSheet.getDataRange().getValues();
-  
+
   let checkedIn = false;
   let lastTs = null;
 
@@ -232,7 +235,7 @@ function handleAccelBatch(payload) {
 
   const sheet = getSheet('accel');
   const nowISO = new Date().toISOString();
-  
+
   const rows = [];
   data.forEach(item => {
     // device_id, x, y, z, sample_ts, batch_ts, recorded_at
@@ -311,7 +314,7 @@ function handleGetGpsPolyline(e) {
 
   const sheet = getSheet('gps');
   const data = sheet.getDataRange().getValues();
-  
+
   const fromDate = new Date(from);
   const toDate = new Date(to);
   const path = [];
