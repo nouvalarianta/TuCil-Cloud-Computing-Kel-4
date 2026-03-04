@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import QRCode from "qrcode";
-import { generateQrToken, getAttendanceList } from "@/lib/api-client";
+import { generateQrToken, getAttendanceList, stopSession } from "@/lib/api-client";
 
 const courses = [
   { id: "cloud-101", name: "Cloud Computing" },
@@ -134,14 +134,34 @@ export default function GenerateQrPage() {
   }, [courseId, sessionId, sessionActive, fetchAttendanceList]);
   
   // Handle stop session
-  const handleStopSession = () => {
-    setSessionActive(false);
-    setQrDataUrl(null);
-    setTokenInfo(null);
-    setTimeLeft(null);
-    setCurrentSessionToken(null); // Clear session token
-    // DON'T clear attendance - keep it for record
-    // setAttendanceList([]); // REMOVED
+  // Handle stop session
+  const handleStopSession = async () => {
+    if (!courseId || !sessionId) return;
+
+    setLoading(true); // Opsional: Beri efek loading saat sedang menembak API
+    setError(null);
+
+    try {
+      const res = await stopSession({
+        course_id: courseId,
+        session_id: sessionId
+      });
+
+      if (res.ok) {
+        setSessionActive(false);
+        setQrDataUrl(null);
+        setTokenInfo(null);
+        setTimeLeft(null);
+        setCurrentSessionToken(null); // Clear session token
+        // DON'T clear attendance - keep it for record
+      } else {
+        setError(res.error || "Gagal menutup sesi absensi");
+      }
+    } catch (err) {
+      setError("Terjadi kesalahan jaringan saat menutup sesi");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Auto-refresh attendance list every 3 seconds when QR is active

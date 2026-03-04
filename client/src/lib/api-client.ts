@@ -122,3 +122,17 @@ export interface AttendanceListResponse {
   attendance: AttendanceRecord[];
   total?: number;
 }
+
+export interface StopSessionRequest {
+  course_id: string;
+  session_id: string;
+}
+
+export async function stopSession(
+  data: StopSessionRequest
+): Promise<ApiResponse<{ status: string }>> {
+  return request<{ status: string }>("/presence/session/stop", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
