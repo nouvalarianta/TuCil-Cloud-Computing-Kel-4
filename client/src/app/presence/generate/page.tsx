@@ -27,6 +27,9 @@ interface AttendanceRecord {
 export default function GenerateQrPage() {
   const [courseId, setCourseId] = useState("");
   const [sessionId, setSessionId] = useState("");
+  // ✅ Tambahkan state untuk sessionDate, default ke hari ini
+  const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]); 
+  
   const [loading, setLoading] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [tokenInfo, setTokenInfo] = useState<{
@@ -42,7 +45,7 @@ export default function GenerateQrPage() {
   
   // Session state
   const [sessionActive, setSessionActive] = useState(false);
-  const [currentSessionToken, setCurrentSessionToken] = useState<string | null>(null); // Track current session
+  const [currentSessionToken, setCurrentSessionToken] = useState<string | null>(null);
 
   // Use ref to avoid dependency issues
   const courseIdRef = useRef(courseId);
@@ -57,14 +60,12 @@ export default function GenerateQrPage() {
     currentSessionTokenRef.current = currentSessionToken;
   }, [courseId, sessionId, sessionActive, currentSessionToken]);
 
-  // Fetch attendance list - STABLE function with no external deps
   const fetchAttendanceList = useCallback(async () => {
     const currentCourseId = courseIdRef.current;
     const currentSessionId = sessionIdRef.current;
     const isActive = sessionActiveRef.current;
     const sessionToken = currentSessionTokenRef.current;
     
-    // Don't fetch if session is not active
     if (!isActive || !currentCourseId || !currentSessionId || !sessionToken) return;
 
     setAttendanceLoading(true);
@@ -72,10 +73,9 @@ export default function GenerateQrPage() {
       const res = await getAttendanceList({
         course_id: currentCourseId,
         session_id: currentSessionId,
-        session_token: sessionToken, // Filter by unique session token
+        session_token: sessionToken, 
       });
       
-      // Double-check session is still active before updating
       if (sessionActiveRef.current && res.ok && res.data?.attendance) {
         setAttendanceList(res.data.attendance);
       }
@@ -84,23 +84,23 @@ export default function GenerateQrPage() {
     } finally {
       setAttendanceLoading(false);
     }
-  }, []); // Empty deps - stable function
+  }, []);
 
   const handleGenerate = useCallback(async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!courseId || !sessionId) return;
+    if (!courseId || !sessionId || !sessionDate) return;
 
     const isFirstGenerate = !sessionActive;
 
     setLoading(true);
     setError(null);
-    // Don't reset qrDataUrl here - let it update seamlessly
 
     const res = await generateQrToken({
       course_id: courseId,
       session_id: sessionId,
+      session_date: sessionDate, // ✅ Kirim tanggal yang dipilih ke API
       ts: new Date().toISOString(),
-    });
+    } as any); // Gunakan 'as any' sementara jika tipe datanya belum di-update di types.ts
 
     if (res.ok && res.data) {
       const token = res.data.qr_token;
@@ -117,12 +117,11 @@ export default function GenerateQrPage() {
       setQrDataUrl(dataUrl);
       setTokenInfo({ token, expiresAt: res.data.expires_at });
       
-      // Only set session active and fetch attendance on first generate
       if (isFirstGenerate) {
         setSessionActive(true);
-        setCurrentSessionToken(token); // Set first token as session identifier
-        setAttendanceList([]); // Clear old data from previous session
-        fetchAttendanceList(); // Fetch fresh data
+        setCurrentSessionToken(token); 
+        setAttendanceList([]); 
+        fetchAttendanceList(); 
       }
     } else {
       setError(res.error || "Gagal generate QR token");
@@ -131,14 +130,12 @@ export default function GenerateQrPage() {
     }
 
     setLoading(false);
-  }, [courseId, sessionId, sessionActive, fetchAttendanceList]);
+  }, [courseId, sessionId, sessionDate, sessionActive, fetchAttendanceList]); // ✅ Tambahkan sessionDate ke dependencies
   
-  // Handle stop session
-  // Handle stop session
   const handleStopSession = async () => {
     if (!courseId || !sessionId) return;
 
-    setLoading(true); // Opsional: Beri efek loading saat sedang menembak API
+    setLoading(true);
     setError(null);
 
     try {
@@ -152,8 +149,7 @@ export default function GenerateQrPage() {
         setQrDataUrl(null);
         setTokenInfo(null);
         setTimeLeft(null);
-        setCurrentSessionToken(null); // Clear session token
-        // DON'T clear attendance - keep it for record
+        setCurrentSessionToken(null); 
       } else {
         setError(res.error || "Gagal menutup sesi absensi");
       }
@@ -164,24 +160,15 @@ export default function GenerateQrPage() {
     }
   };
 
-  // Auto-refresh attendance list every 3 seconds when QR is active
   useEffect(() => {
-    if (!sessionActive) {
-      // Don't clear attendance - keep the data even when stopped
-      return;
-    }
-
-    // Initial fetch
+    if (!sessionActive) return;
     fetchAttendanceList();
-
     const intervalId = setInterval(() => {
       fetchAttendanceList();
     }, 3000);
-
     return () => clearInterval(intervalId);
   }, [sessionActive, fetchAttendanceList]);
 
-  // Countdown and Auto-Refresh Effect
   useEffect(() => {
     if (!tokenInfo?.expiresAt || !sessionActive) {
       setTimeLeft(null);
@@ -218,7 +205,6 @@ export default function GenerateQrPage() {
 
   return (
     <div className="max-w-7xl mx-auto pb-12">
-      {/* Form - Hidden when session is active */}
       {!sessionActive && (
         <div className="max-w-lg mx-auto">
           <form
@@ -248,6 +234,7 @@ export default function GenerateQrPage() {
                   ))}
                 </select>
               </div>
+              
               <div>
                 <label className="block text-sm text-white/60 mb-1.5">
                   Sesi Pertemuan
@@ -268,6 +255,21 @@ export default function GenerateQrPage() {
                   ))}
                 </select>
               </div>
+
+              {/* ✅ Tambahan Form Input Tanggal */}
+              <div>
+                <label className="block text-sm text-white/60 mb-1.5">
+                  Tanggal Kelas (Untuk Rekap Absen)
+                </label>
+                <input
+                  type="date"
+                  value={sessionDate}
+                  onChange={(e) => setSessionDate(e.target.value)}
+                  required
+                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+                  style={{ colorScheme: "dark" }} // Agar icon kalender mengikuti tema dark
+                />
+              </div>
             </div>
 
             {selectedCourse && sessionId && (
@@ -276,31 +278,21 @@ export default function GenerateQrPage() {
                 <span className="text-blue-400 font-medium">{selectedCourse.name}</span>
                 <span className="text-white/30"> · </span>
                 <span className="text-cyan-400">{sessions.find(s => s.id === sessionId)?.name}</span>
+                <span className="text-white/30"> · </span>
+                <span className="text-emerald-400">{sessionDate}</span>
               </div>
             )}
 
             <button
               type="submit"
-              disabled={loading || !courseId || !sessionId}
+              disabled={loading || !courseId || !sessionId || !sessionDate}
               className="w-full mt-5 py-3 rounded-xl font-semibold text-sm bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-500/20"
             >
               {loading ? (
                 <span className="inline-flex items-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                   Generating...
                 </span>
@@ -310,7 +302,6 @@ export default function GenerateQrPage() {
             </button>
           </form>
 
-          {/* Error */}
           {error && (
             <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-5 text-center mb-6">
               <p className="text-3xl mb-2">❌</p>
@@ -320,10 +311,8 @@ export default function GenerateQrPage() {
         </div>
       )}
 
-      {/* 2-Box Layout - Shown when session is active */}
       {sessionActive && qrDataUrl && tokenInfo && (
         <div className="grid lg:grid-cols-2 gap-6 animate-in fade-in duration-500">
-          {/* Left Box - QR Code with Stop Button */}
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -350,28 +339,21 @@ export default function GenerateQrPage() {
               </div>
 
               <div className="space-y-4 max-w-sm mx-auto">
-                {/* Countdown Timer */}
                 {timeLeft !== null && (
-                  <div className={`rounded-xl border p-3 text-center transition-colors ${timeLeft <= 10
-                      ? "border-red-500/30 bg-red-500/10"
-                      : "border-white/10 bg-black/20"
-                    }`}>
+                  <div className={`rounded-xl border p-3 text-center transition-colors ${timeLeft <= 10 ? "border-red-500/30 bg-red-500/10" : "border-white/10 bg-black/20"}`}>
                     <p className="text-white/40 text-[11px] uppercase tracking-wider mb-1">QR Berubah dalam</p>
-                    <p className={`font-mono text-2xl font-bold tabular-nums ${timeLeft <= 10 ? "text-red-400" : "text-cyan-400"
-                      }`}>
+                    <p className={`font-mono text-2xl font-bold tabular-nums ${timeLeft <= 10 ? "text-red-400" : "text-cyan-400"}`}>
                       {timeLeft}s
                     </p>
                     <div className="mt-2 h-1 rounded-full bg-white/10 overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${timeLeft <= 10 ? "bg-red-400" : "bg-cyan-400"
-                          }`}
+                        className={`h-full rounded-full transition-all ${timeLeft <= 10 ? "bg-red-400" : "bg-cyan-400"}`}
                         style={{ width: `${(timeLeft / maxTime) * 100}%` }}
                       />
                     </div>
                   </div>
                 )}
 
-                {/* Token Hash */}
                 <div className="bg-black/20 rounded-lg py-2 px-3 border border-white/5">
                   <p className="text-white/40 text-[11px] uppercase tracking-wider mb-1">Session Token Hash</p>
                   <code className="text-blue-400 font-mono text-xs break-all">
@@ -382,7 +364,6 @@ export default function GenerateQrPage() {
             </div>
           </div>
 
-          {/* Right Box - Attendance List */}
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -393,25 +374,13 @@ export default function GenerateQrPage() {
                   </span>
                 </h3>
                 <p className="text-xs text-white/50 mt-0.5">
-                  Auto-refresh setiap 3 detik
+                  Tanggal: <span className="text-emerald-400 font-medium">{sessionDate}</span>
                 </p>
               </div>
               {attendanceLoading && (
                 <svg className="animate-spin h-5 w-5 text-cyan-400" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
               )}
             </div>
@@ -435,7 +404,7 @@ export default function GenerateQrPage() {
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-cyan-500 flex items-center justify-center font-bold text-white text-sm">
-                      {index + 1}
+                      {attendanceList.length - index}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-white truncate">
@@ -487,14 +456,8 @@ export default function GenerateQrPage() {
           background: rgba(255, 255, 255, 0.3);
         }
         @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         .animate-in {
           animation: fade-in 0.3s ease-out forwards;
