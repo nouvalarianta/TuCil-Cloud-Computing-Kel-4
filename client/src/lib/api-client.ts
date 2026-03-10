@@ -12,6 +12,8 @@ import type {
   GpsMarkerResponse,
   GpsPolylineQuery,
   GpsPolylineResponse,
+  AccelBatchRequest,
+  AccelBatchResponse,
 } from "./types";
 
 const BASE_URL = "/api/gas";
@@ -79,6 +81,17 @@ export async function getAttendanceList(query: {
     ...(query.session_token && { session_token: query.session_token }),
   });
   return request<AttendanceListResponse>(`/presence/attendance/list?${params.toString()}`);
+}
+
+// --- Modul 2: Telemetry (Accelerometer) ---
+
+export async function postAccelBatch(
+  data: AccelBatchRequest
+): Promise<ApiResponse<AccelBatchResponse>> {
+  return request<AccelBatchResponse>("/sensor/accel/batch", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 // --- Modul 3: GPS + Peta ---

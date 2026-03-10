@@ -3,10 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navItems = [
+type NavItem = {
+  label: string;
+  href: any; // Using any for Route typing workarounds
+  icon: string;
+  matchPrefix?: string;
+  disabled?: boolean;
+};
+
+const navItems: NavItem[] = [
   { label: "Home", href: "/", icon: "🏠" },
   { label: "Presensi", href: "/presence", matchPrefix: "/presence", icon: "📱" },
-  { label: "Accel", href: "#", matchPrefix: "/telemetry", icon: "📊", disabled: true },
+  { label: "Accel", href: "/telemetry/accel", matchPrefix: "/telemetry/accel", icon: "📊" },
   { label: "GPS", href: "/gps/map", matchPrefix: "/gps", icon: "🗺️" },
 ];
 

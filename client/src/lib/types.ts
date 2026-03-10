@@ -93,3 +93,22 @@ export interface GpsPolylineQuery {
 export interface GpsPolylineResponse {
   points: Array<{ lat: number; lng: number; ts: string }>;
 }
+
+// --- Modul 2: Telemetry (Accelerometer) ---
+
+export interface AccelDataPoint {
+  x: number;
+  y: number;
+  z: number;
+  ts: string; // ISO-8601 at sample time
+}
+
+export interface AccelBatchRequest {
+  device_id: string;
+  ts: string; // Batch submission timestamp
+  data: AccelDataPoint[];
+}
+
+export interface AccelBatchResponse {
+  processed_records: number;
+}
