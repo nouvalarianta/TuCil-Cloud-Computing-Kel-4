@@ -12,9 +12,23 @@ import type {
   GpsMarkerResponse,
   GpsPolylineQuery,
   GpsPolylineResponse,
+  AccelDataPoint,
   AccelBatchRequest,
   AccelBatchResponse,
 } from "./types";
+
+export interface AccelLatestQuery {
+  device_id: string;
+}
+
+export interface AccelLatestResponse {
+  data: {
+    t: string;
+    x: number;
+    y: number;
+    z: number;
+  };
+}
 
 const BASE_URL = "/api/gas";
 
@@ -92,6 +106,13 @@ export async function postAccelBatch(
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export async function getAccelLatest(
+  query: AccelLatestQuery
+): Promise<ApiResponse<AccelLatestResponse>> {
+  const params = new URLSearchParams({ device_id: query.device_id });
+  return request<AccelLatestResponse>(`/telemetry/accel/latest?${params.toString()}`);
 }
 
 // --- Modul 3: GPS + Peta ---
