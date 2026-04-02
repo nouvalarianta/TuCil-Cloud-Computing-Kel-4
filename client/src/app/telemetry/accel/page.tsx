@@ -127,7 +127,7 @@ function UserRecorderView({ onBack }: { onBack: () => void }) {
       setSyncStatus(`Sinkron ${res.data?.accepted || currentBatch.length} record`);
       setTimeout(() => setSyncStatus("Merekam data..."), 2000);
     } else {
-      setSyncStatus(`Gagal sync`);
+      setSyncStatus(`Gagal: ${res.error}`);
     }
   };
 
