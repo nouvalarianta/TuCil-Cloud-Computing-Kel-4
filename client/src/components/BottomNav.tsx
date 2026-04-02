@@ -16,6 +16,7 @@ const navItems: NavItem[] = [
   { label: "Presensi", href: "/presence", matchPrefix: "/presence", icon: "📱" },
   { label: "Accel", href: "/telemetry/accel", matchPrefix: "/telemetry/accel", icon: "📊" },
   { label: "GPS", href: "/gps/map", matchPrefix: "/gps", icon: "🗺️" },
+  { label: "Settings", href: "/settings", matchPrefix: "/settings", icon: "⚙️" },
 ];
 
 export default function BottomNav() {

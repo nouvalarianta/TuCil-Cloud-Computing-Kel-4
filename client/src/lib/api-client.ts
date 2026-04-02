@@ -198,3 +198,32 @@ export async function generateQrTokenExternal(
     data as unknown as Record<string, unknown>
   );
 }
+
+export async function getAttendanceListExternal(
+  gasUrl: string,
+  query: {
+    course_id: string;
+    session_id: string;
+    session_token?: string;
+  }
+): Promise<ApiResponse<AttendanceListResponse>> {
+  return requestExternal<AttendanceListResponse>(
+    gasUrl,
+    "presence/attendance/list",
+    "GET",
+    undefined,
+    query as unknown as Record<string, string>
+  );
+}
+
+export async function stopSessionExternal(
+  gasUrl: string,
+  data: StopSessionRequest
+): Promise<ApiResponse<{ status: string }>> {
+  return requestExternal<{ status: string }>(
+    gasUrl,
+    "presence/session/stop",
+    "POST",
+    data as unknown as Record<string, unknown>
+  );
+}

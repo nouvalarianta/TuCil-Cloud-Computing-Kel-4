@@ -18,12 +18,11 @@ const QrScanner = dynamic(() => import("@/components/qr-scanner"), {
 });
 
 type ScanState = "scanning" | "confirming" | "submitting" | "success" | "error";
-type GasTarget = "own" | "external";
 
 export default function ScanPage() {
   const [state, setState] = useState<ScanState>("scanning");
-  const [gasTarget, setGasTarget] = useState<GasTarget>("own");
-  const [externalGasUrlInput, setExternalGasUrlInput] = useState(GAS_EXTERNAL_URL);
+  const [gasTarget, setGasTarget] = useState<"own" | "external">("own");
+  const [externalGasUrlInput, setExternalGasUrlInput] = useState("");
   const [scannedData, setScannedData] = useState<{
     qr_token: string;
     course_id: string;
@@ -45,6 +44,12 @@ export default function ScanPage() {
       setUserId(savedUserId);
     }
     
+    // Load Settings
+    const savedGasTarget = localStorage.getItem("gasTarget") as "own" | "external";
+    const savedGasUrl = localStorage.getItem("gasExternalUrl");
+    if (savedGasTarget) setGasTarget(savedGasTarget);
+    if (savedGasUrl) setExternalGasUrlInput(savedGasUrl);
+
     // Auto-generate / load Device ID
     setDeviceId(getDeviceId());
   }, []);
@@ -127,49 +132,6 @@ export default function ScanPage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      {/* GAS Target Toggle */}
-      {state === "scanning" && (
-        <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-xs text-white/40 uppercase tracking-wider mb-2.5 font-medium">
-            🎯 Target GAS Backend
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setGasTarget("own")}
-              className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                gasTarget === "own"
-                  ? "bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow-lg shadow-cyan-500/10"
-                  : "text-white/50 border border-white/10 hover:bg-white/5"
-              }`}
-            >
-              🏠 GAS Sendiri
-            </button>
-            <button
-              onClick={() => setGasTarget("external")}
-              className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                gasTarget === "external"
-                  ? "bg-gradient-to-r from-violet-500/20 to-pink-500/20 text-violet-400 border border-violet-500/30 shadow-lg shadow-violet-500/10"
-                  : "text-white/50 border border-white/10 hover:bg-white/5"
-              }`}
-            >
-              🌐 GAS Eksternal
-            </button>
-          </div>
-          {gasTarget === "external" && (
-            <div className="mt-3 p-2.5 bg-violet-500/5 border border-violet-500/10 rounded-lg">
-              <label className="text-[11px] text-white/40 uppercase tracking-wider mb-1 block">URL Tujuan GAS Eksternal</label>
-              <input
-                type="text"
-                value={externalGasUrlInput}
-                onChange={(e) => setExternalGasUrlInput(e.target.value)}
-                placeholder="https://script.google.com/macros/s/.../exec"
-                className="w-full bg-black/20 border border-white/10 rounded px-2 py-1.5 text-xs text-violet-400 font-mono focus:outline-none focus:border-violet-500/50"
-              />
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Scanning */}
       {state === "scanning" && (
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">

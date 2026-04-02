@@ -2,7 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import QRCode from "qrcode";
-import { generateQrToken, getAttendanceList, stopSession } from "@/lib/api-client";
+import {
+  generateQrToken,
+  getAttendanceList,
+  stopSession,
+  generateQrTokenExternal,
+  getAttendanceListExternal,
+  stopSessionExternal,
+} from "@/lib/api-client";
+import { GAS_EXTERNAL_URL } from "@/lib/gas-config";
 
 const courses = [
   { id: "cloud-101", name: "Cloud Computing" },
@@ -25,6 +33,8 @@ interface AttendanceRecord {
 }
 
 export default function GenerateQrPage() {
+  const [gasTarget, setGasTarget] = useState<"own" | "external">("own");
+  const [externalGasUrlInput, setExternalGasUrlInput] = useState("");
   const [courseId, setCourseId] = useState("");
   const [sessionId, setSessionId] = useState("");
   // ✅ Tambahkan state untuk sessionDate, default ke hari ini
@@ -52,13 +62,24 @@ export default function GenerateQrPage() {
   const sessionIdRef = useRef(sessionId);
   const sessionActiveRef = useRef(sessionActive);
   const currentSessionTokenRef = useRef(currentSessionToken);
+  const gasTargetRef = useRef(gasTarget);
+  const externalGasUrlRef = useRef(externalGasUrlInput);
   
+  useEffect(() => {
+    const savedGasTarget = localStorage.getItem("gasTarget") as "own" | "external";
+    const savedGasUrl = localStorage.getItem("gasExternalUrl");
+    if (savedGasTarget) setGasTarget(savedGasTarget);
+    if (savedGasUrl) setExternalGasUrlInput(savedGasUrl);
+  }, []);
+
   useEffect(() => {
     courseIdRef.current = courseId;
     sessionIdRef.current = sessionId;
     sessionActiveRef.current = sessionActive;
     currentSessionTokenRef.current = currentSessionToken;
-  }, [courseId, sessionId, sessionActive, currentSessionToken]);
+    gasTargetRef.current = gasTarget;
+    externalGasUrlRef.current = externalGasUrlInput;
+  }, [courseId, sessionId, sessionActive, currentSessionToken, gasTarget, externalGasUrlInput]);
 
   const fetchAttendanceList = useCallback(async () => {
     const currentCourseId = courseIdRef.current;
@@ -70,11 +91,15 @@ export default function GenerateQrPage() {
 
     setAttendanceLoading(true);
     try {
-      const res = await getAttendanceList({
+      const query = {
         course_id: currentCourseId,
         session_id: currentSessionId,
-        session_token: sessionToken, 
-      });
+        session_token: sessionToken,
+      };
+
+      const res = gasTargetRef.current === "external" && externalGasUrlRef.current
+        ? await getAttendanceListExternal(externalGasUrlRef.current, query)
+        : await getAttendanceList(query);
       
       if (sessionActiveRef.current && res.ok && res.data?.attendance) {
         setAttendanceList(res.data.attendance);
@@ -95,16 +120,32 @@ export default function GenerateQrPage() {
     setLoading(true);
     setError(null);
 
-    const res = await generateQrToken({
+    const generateData = {
       course_id: courseId,
       session_id: sessionId,
       session_date: sessionDate, // ✅ Kirim tanggal yang dipilih ke API
       ts: new Date().toISOString(),
-    } as any); // Gunakan 'as any' sementara jika tipe datanya belum di-update di types.ts
+    } as any; // Gunakan 'as any' sementara jika tipe datanya belum di-update di types.ts
+
+    const res = gasTarget === "external" && externalGasUrlInput
+      ? await generateQrTokenExternal(externalGasUrlInput, generateData)
+      : await generateQrToken(generateData);
 
     if (res.ok && res.data) {
       const token = res.data.qr_token;
-      const qrPayload = token;
+      
+      let qrPayload;
+      if (gasTarget === "external" && externalGasUrlInput) {
+        qrPayload = JSON.stringify({
+          qr_token: token,
+          course_id: courseId,
+          session_id: sessionId,
+          gas_url: externalGasUrlInput
+        });
+      } else {
+        qrPayload = token;
+      }
+      
       const dataUrl = await QRCode.toDataURL(qrPayload, {
         width: 300,
         margin: 2,
@@ -135,10 +176,14 @@ export default function GenerateQrPage() {
     setError(null);
 
     try {
-      const res = await stopSession({
+      const stopData = {
         course_id: courseId,
         session_id: sessionId
-      });
+      };
+
+      const res = gasTarget === "external" && externalGasUrlInput
+        ? await stopSessionExternal(externalGasUrlInput, stopData)
+        : await stopSession(stopData);
 
       if (res.ok) {
         setSessionActive(false);
@@ -208,6 +253,14 @@ export default function GenerateQrPage() {
             className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 mb-6"
           >
             <h2 className="font-semibold text-lg mb-4">🔑 Generate QR Token</h2>
+
+            {gasTarget === "external" && externalGasUrlInput && (
+              <div className="mb-4 p-3 rounded-xl border border-violet-500/20 bg-violet-500/5 text-center">
+                <span className="text-white/40 text-sm">Generate untuk: </span>
+                <span className="font-medium text-violet-400 text-sm">🌐 GAS Eksternal</span>
+                <p className="text-[10px] text-violet-400/70 font-mono break-all mt-1">{externalGasUrlInput}</p>
+              </div>
+            )}
 
             <div className="space-y-4">
               <div>
@@ -316,6 +369,11 @@ export default function GenerateQrPage() {
                 <p className="text-xs text-white/50 mt-0.5">
                   {selectedCourse?.name} · {sessions.find(s => s.id === sessionId)?.name}
                 </p>
+                {gasTarget === "external" && (
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded text-[10px] uppercase font-bold">
+                    Target Eksternal
+                  </span>
+                )}
               </div>
               <button
                 onClick={handleStopSession}
